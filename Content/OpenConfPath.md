@@ -1,6 +1,6 @@
 # Open Conf Path
 
-_OpenConfPath_ is a sandbox setting in [Sandboxie Ini](SandboxieIni.md). It specifies a path pattern, for which Sandboxie will not apply sandboxing for registry keys. This lets sandboxed programs have direct access to update system settings _outside the sandbox_. This setting essentially _punches a hole_ in the sandbox, at a particular registry key location.
+_OpenConfPath_ is a sandbox setting in [Sandboxie Ini](SandboxieIni.md) available since v1.0.0 / 5.55.0. It specifies a path pattern, for which Sandboxie will not apply sandboxing for registry keys. This lets sandboxed programs have direct access to update system settings _outside the sandbox_. This setting essentially _punches a hole_ in the sandbox, at a particular registry key location.
 
 It is the same as the [OpenKeyPath](OpenKeyPath.md) setting, except that this setting is always applied, whereas _OpenKeyPath_ is only applied if the application is running from a file or folder that is located outside the sandbox.
 
