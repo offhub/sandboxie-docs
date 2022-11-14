@@ -6,7 +6,7 @@ The _Resource Access_ window in [Sandboxie Plus](SbPlus.md) displays and changes
 
 In this window, the individual settings are organized into settings pages, and some pages are organized into groups, as shown below.
 
-![](../Media/SbPlusBox07ResAcc01Files.png)
+![asdasdasd](../Media/SbPlusBox07ResAcc01Files.png)
 
 The left part of the window contains the pages and the right upper part groups. When a settings page is selected (clicked) in the left part of the window, the right part of the window shows the related settings.
 
