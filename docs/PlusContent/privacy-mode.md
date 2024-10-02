@@ -13,6 +13,7 @@ The setting for a privacy enhanced box can be enabled by adding `UsePrivacyMode=
 **What is User Space?** AppGuard refers to [user space](https://malwaretips.com/threads/run-by-smartscreen-utility.65145/post-561364) as "computer storage space that is typically accessible by non-admin Windows users. It contains the user's profile directory (which includes the My Documents folder and Desktop), removable storage devices, network shares, and all non-system hard drives such as additional external and internal disk drives." Think of "user space" as everything outside the **system** (where the core operating system and programs live), in other words, outside the `C:\Windows`, `C:\Program Files`, and `C:\Program Files (x86)` folders!
 
 Internally, a privacy enhanced box is based on three defaults:
+
 1. **Allow read access to system resources:**
 - `C:\Windows`
 - `C:\Program Files`
