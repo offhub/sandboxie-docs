@@ -43,6 +43,7 @@ The Sandman UI provides us with a method for editing and testing network rules. 
 ![](../Media/WFP_Rule_Editor.png)
 
 The **attributes** at our disposal (with some examples of syntax) are:
+
 - **Action** = `Allow` | `Block` (selected from the Network Restrictions tab)
 - **Program** = `program.exe`
 - **Port** = `80,443,1000-2000`
@@ -50,6 +51,7 @@ The **attributes** at our disposal (with some examples of syntax) are:
 - **Protocol** = `TCP` | `UDP`
 
 The following **rules precedence** scheme determines rule hierarchy:
+
 1. A rule for a specified program trumps a rule for all programs except a given one, trumps rules for all programs.
 2. A rule with a Port number or IP address trumps a rule without:
    - 2a. A rule with an IP address and Port number trumps a rule with an IP address only or Port number only.
