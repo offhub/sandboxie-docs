@@ -1,6 +1,9 @@
 name: Check broken links
 
 on:
+  schedule:
+    - cron: '0 8 * * *'  # Run daily at 08:00 UTC
+  # Triggers the workflow on push or pull request events
   push:
     branches: [ main ]
     paths:
@@ -40,7 +43,7 @@ jobs:
       # CACHE RESTORE STEP - The Decision Point
       # =========================================================================
       - name: Restore lychee cache
-        id: restore-cache
+        id: restore_cache
         uses: actions/cache/restore@v4.3.0
         with:
           path: docs/.lycheecache
@@ -53,94 +56,14 @@ jobs:
       - name: Ensure cache dir exists
         run: mkdir -p docs/.lycheecache
 
-      # Debug .lycheecache directory before Lychee run
-      - name: Debug .lycheecache directory (BEFORE)
-        run: |
-          echo "=== Searching for .lycheecache directory (BEFORE Lychee) ==="
-          echo "Current directory: $PWD"
-          
-          # Search for .lycheecache in the entire workspace
-          echo "Searching recursively for .lycheecache:"
-          find . -name ".lycheecache" -type d 2>/dev/null | head -20
-          
-          echo
-          echo "=== Checking docs/.lycheecache specifically ==="
-          if [ -d "docs/.lycheecache" ]; then
-            echo "📁 docs/.lycheecache EXISTS"
-            echo "Location: $(realpath docs/.lycheecache)"
-            echo "Size: $(du -sh docs/.lycheecache 2>/dev/null || echo 'unknown')"
-            echo
-            echo "=== Contents of docs/.lycheecache ==="
-            ls -la docs/.lycheecache/
-            echo
-            echo "=== Recursive contents (if any subdirectories) ==="
-            find docs/.lycheecache -type f -exec ls -la {} \; 2>/dev/null | head -50
-            echo
-            echo "=== File sizes and types ==="
-            find docs/.lycheecache -type f -exec sh -c 'echo "{}: $(file -b {}) - $(du -h {} | cut -f1)"' \; 2>/dev/null | head -20
-          else
-            echo "❌ docs/.lycheecache does NOT exist"
-            echo "Creating it now for testing..."
-            mkdir -p docs/.lycheecache
-            echo "Created empty directory"
-            ls -la docs/.lycheecache/
-          fi
-          
-          echo
-          echo "=== Checking for any lychee cache files elsewhere ==="
-          find . -name "*.cache" -o -name "lychee*" -type f 2>/dev/null | head -20
-
-      # Debug show cache restore outputs, computed key and files used
-      - name: Debug Cache restore info
-        run: |
-          echo "=== Cache restore metadata ==="
-          echo "cache-hit=${{ steps.restore-cache.outputs.cache-hit }}"
-          echo "cache-primary-key=${{ steps.restore-cache.outputs.cache-primary-key }}"
-          # show the primary key expression expanded at workflow-eval time
-          echo "computed-primary-key=lychee-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('docs/Content/*.md', 'docs/PlusContent/*.md', 'docs/README.md') }}"
-          echo "restore-keys used (literal):"
-          echo "lychee-${{ runner.os }}-${{ github.ref }}-"
-          echo
-          echo "Files used to compute the hash (git ls-files may help):"
-          git ls-files docs/Content docs/PlusContent docs/README.md || true
-          echo "=== End cache metadata ==="
-
-      # Debug list workspace and repository files (recursive)
-      - name: Debug List workspace (recursive)
-        run: |
-          echo "Workspace root: $GITHUB_WORKSPACE"
-          pwd
-          echo "Top-level listing:"
-          ls -la "$GITHUB_WORKSPACE" || true
-          echo
-          echo "Recursive listing (this may be large):"
-          ls -laR "$GITHUB_WORKSPACE" || true
-
-      # Debug show docs contents (if any)
-      - name: Debug Show docs contents
-        run: |
-          echo "docs path: $PWD/docs"
-          if [ -d docs ]; then
-            echo "docs exists: listing top-level entries"
-            ls -la docs || true
-            echo
-            echo "Recursive contents (up to depth 5):"
-            find docs -maxdepth 5 -print -exec ls -la {} \; || true
-            echo
-            echo "Sizes of files inside docs (human readable):"
-            find docs -type f -exec du -h {} + | sort -hr | head -n 200 || true
-          else
-            echo "docs does not exist"
-          fi
-
       # =========================================================================
       # CACHE HIT SCENARIO - Fast Path
       # =========================================================================
       - name: Log cache status
         run: |
-          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "${{ steps.restore_cache.outputs.cache-hit }}" = "true" ]; then
             echo "🎯 CACHE HIT: Using cached link check results"
-            echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
+            echo "Cache Key: ${{ steps.restore_cache.outputs.cache-primary-key }}"
           else
             echo "🔄 CACHE MISS: Will check all links and create new cache"
           fi
@@ -185,34 +108,6 @@ jobs:
           fail: true
           output: lychee-report.md
 
-      # Debug .lycheecache directory after Lychee run
-      - name: Debug .lycheecache directory (AFTER)
-        if: always()
-        run: |
-          echo "=== .lycheecache status AFTER Lychee execution ==="
-          if [ -d "docs/.lycheecache" ]; then
-            echo "📁 docs/.lycheecache exists"
-            echo "Total files: $(find docs/.lycheecache -type f | wc -l)"
-            echo "Size: $(du -sh docs/.lycheecache)"
-            echo
-            echo "=== Detailed contents ==="
-            ls -la docs/.lycheecache/
-            echo
-            echo "=== File details ==="
-            find docs/.lycheecache -type f -exec ls -la {} \; 2>/dev/null
-            echo
-            echo "=== Cache file contents (first 10 lines if text) ==="
-            for file in docs/.lycheecache/*; do
-              if [ -f "$file" ]; then
-                echo "--- $file ---"
-                head -10 "$file" 2>/dev/null || echo "(binary or unreadable)"
-                echo
-              fi
-            done
-          else
-            echo "❌ docs/.lycheecache still does not exist after Lychee run"
-          fi
-
       # =========================================================================
       # CACHE SAVE STEP - Different Behavior Based on Scenario
       # =========================================================================
@@ -221,31 +116,12 @@ jobs:
         uses: actions/cache/save@v4.3.0
         with:
           path: docs/.lycheecache
-          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-
-      # Debug show cache directory after save (size & listing)
-      - name: Debug Cache after save
-        if: always()
-        run: |
-          echo "=== After cache save ==="
-          if [ -d docs ]; then
-            echo "Total size of docs:"
-            du -sh docs || true
-            echo
-            echo "Top-level entries:"
-            ls -la docs || true
-            echo
-            echo "Recursive listing (up to depth 5):"
-            find docs -maxdepth 5 -print -exec ls -la {} \; || true
-          else
-            echo "docs not present after save"
-          fi
-          echo "=== End after cache save ==="
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       - name: Log cache save result
         if: always()
         run: |
-          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "${{ steps.restore_cache.outputs.cache-hit }}" = "true" ]; then
             echo "✅ Cache was updated with fresh link data"
           else
             echo "🆕 New cache created with all link check results"
