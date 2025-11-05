@@ -43,7 +43,7 @@ jobs:
         id: restore-cache
         uses: actions/cache/restore@v4.3.0
         with:
-          path: docs/.lycheecache
+          path: docs/docs/.lycheecache
           # Primary: Content-based key (most specific)
           key: lychee-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('docs/Content/*.md', 'docs/PlusContent/*.md', 'docs/README.md') }}
           # Fallback hierarchy:
@@ -51,7 +51,7 @@ jobs:
             lychee-${{ runner.os }}-${{ github.ref }}-
 
       - name: Ensure cache dir exists
-        run: mkdir -p .lycheecache
+        run: mkdir -p docs/.lycheecache
 
       # Debug show cache restore outputs, computed key and files used
       - name: Debug Cache restore info
@@ -79,21 +79,21 @@ jobs:
           echo "Recursive listing (this may be large):"
           ls -laR "$GITHUB_WORKSPACE" || true
 
-      # Debug show .lycheecache contents (if any)
-      - name: Debug Show .lycheecache contents
+      # Debug show docs/.lycheecache contents (if any)
+      - name: Debug Show docs/.lycheecache contents
         run: |
-          echo ".lycheecache path: $PWD/.lycheecache"
-          if [ -d .lycheecache ]; then
-            echo ".lycheecache exists: listing top-level entries"
-            ls -la .lycheecache || true
+          echo "docs/.lycheecache path: $PWD/docs/.lycheecache"
+          if [ -d docs/.lycheecache ]; then
+            echo "docs/.lycheecache exists: listing top-level entries"
+            ls -la docs/.lycheecache || true
             echo
             echo "Recursive contents (up to depth 5):"
-            find .lycheecache -maxdepth 5 -print -exec ls -la {} \; || true
+            find docs/.lycheecache -maxdepth 5 -print -exec ls -la {} \; || true
             echo
-            echo "Sizes of files inside .lycheecache (human readable):"
-            find .lycheecache -type f -exec du -h {} + | sort -hr | head -n 200 || true
+            echo "Sizes of files inside docs/.lycheecache (human readable):"
+            find docs/.lycheecache -type f -exec du -h {} + | sort -hr | head -n 200 || true
           else
-            echo ".lycheecache does not exist"
+            echo "docs/.lycheecache does not exist"
           fi
 
       # =========================================================================
@@ -155,7 +155,7 @@ jobs:
         if: always()
         uses: actions/cache/save@v4.3.0
         with:
-          path: docs/.lycheecache
+          path: docs/docs/.lycheecache
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       # Debug show cache directory after save (size & listing)
@@ -163,17 +163,17 @@ jobs:
         if: always()
         run: |
           echo "=== After cache save ==="
-          if [ -d .lycheecache ]; then
-            echo "Total size of .lycheecache:"
-            du -sh .lycheecache || true
+          if [ -d docs/.lycheecache ]; then
+            echo "Total size of docs/.lycheecache:"
+            du -sh docs/.lycheecache || true
             echo
             echo "Top-level entries:"
-            ls -la .lycheecache || true
+            ls -la docs/.lycheecache || true
             echo
             echo "Recursive listing (up to depth 5):"
-            find .lycheecache -maxdepth 5 -print -exec ls -la {} \; || true
+            find docs/.lycheecache -maxdepth 5 -print -exec ls -la {} \; || true
           else
-            echo ".lycheecache not present after save"
+            echo "docs/.lycheecache not present after save"
           fi
           echo "=== End after cache save ==="
 
