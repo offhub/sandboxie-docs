@@ -43,7 +43,7 @@ jobs:
       # CACHE RESTORE STEP - The Decision Point
       # =========================================================================
       - name: Restore lychee cache
-        id: restore_cache
+        id: restore-cache
         uses: actions/cache/restore@v4.3.0
         with:
           path: docs/.lycheecache
@@ -53,17 +53,17 @@ jobs:
           restore-keys: |
             lychee-${{ runner.os }}-${{ github.ref }}-
 
-      - name: Ensure cache dir exists
-        run: mkdir -p docs/.lycheecache
+      # - name: Ensure cache dir exists
+        # run: mkdir -p docs/.lycheecache
 
       # =========================================================================
       # CACHE HIT SCENARIO - Fast Path
       # =========================================================================
       - name: Log cache status
         run: |
-          if [ "${{ steps.restore_cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
             echo "🎯 CACHE HIT: Using cached link check results"
-            echo "Cache Key: ${{ steps.restore_cache.outputs.cache-primary-key }}"
+            echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
           else
             echo "🔄 CACHE MISS: Will check all links and create new cache"
           fi
@@ -107,6 +107,12 @@ jobs:
             --verbose
           fail: true
           output: lychee-report.md
+          
+      - name: Check cache 1
+        run: cat .lycheecache
+        
+      - name: Check cache 2
+        run: cat docs/.lycheecache
 
       # =========================================================================
       # CACHE SAVE STEP - Different Behavior Based on Scenario
@@ -116,12 +122,12 @@ jobs:
         uses: actions/cache/save@v4.3.0
         with:
           path: docs/.lycheecache
-          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
       - name: Log cache save result
         if: always()
         run: |
-          if [ "${{ steps.restore_cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
             echo "✅ Cache was updated with fresh link data"
           else
             echo "🆕 New cache created with all link check results"
@@ -140,7 +146,7 @@ jobs:
       # # Source: https://github.com/cilium/tetragon/pull/805
       # - name: Search for existing issue number
         # if: failure() && github.ref == 'refs/heads/main'
-        # id: search_issue
+        # id: search-issue
         # env:
           # ISSUE_NAME: "Link Checker Report"
         # run: |
@@ -156,5 +162,5 @@ jobs:
         # with:
           # title: Link Checker Report
           # content-filepath: lychee-report.md
-          # issue-number: ${{ steps.search_issue.outputs.issue_number }}
+          # issue-number: ${{ steps.search-issue.outputs.issue_number }}
           # labels: automated-report
