@@ -53,6 +53,43 @@ jobs:
       - name: Ensure cache dir exists
         run: mkdir -p docs/.lycheecache
 
+      # Debug .lycheecache directory before Lychee run
+      - name: Debug .lycheecache directory (BEFORE)
+        run: |
+          echo "=== Searching for .lycheecache directory (BEFORE Lychee) ==="
+          echo "Current directory: $PWD"
+          
+          # Search for .lycheecache in the entire workspace
+          echo "Searching recursively for .lycheecache:"
+          find . -name ".lycheecache" -type d 2>/dev/null | head -20
+          
+          echo
+          echo "=== Checking docs/.lycheecache specifically ==="
+          if [ -d "docs/.lycheecache" ]; then
+            echo "📁 docs/.lycheecache EXISTS"
+            echo "Location: $(realpath docs/.lycheecache)"
+            echo "Size: $(du -sh docs/.lycheecache 2>/dev/null || echo 'unknown')"
+            echo
+            echo "=== Contents of docs/.lycheecache ==="
+            ls -la docs/.lycheecache/
+            echo
+            echo "=== Recursive contents (if any subdirectories) ==="
+            find docs/.lycheecache -type f -exec ls -la {} \; 2>/dev/null | head -50
+            echo
+            echo "=== File sizes and types ==="
+            find docs/.lycheecache -type f -exec sh -c 'echo "{}: $(file -b {}) - $(du -h {} | cut -f1)"' \; 2>/dev/null | head -20
+          else
+            echo "❌ docs/.lycheecache does NOT exist"
+            echo "Creating it now for testing..."
+            mkdir -p docs/.lycheecache
+            echo "Created empty directory"
+            ls -la docs/.lycheecache/
+          fi
+          
+          echo
+          echo "=== Checking for any lychee cache files elsewhere ==="
+          find . -name "*.cache" -o -name "lychee*" -type f 2>/dev/null | head -20
+
       # Debug show cache restore outputs, computed key and files used
       - name: Debug Cache restore info
         run: |
@@ -147,6 +184,34 @@ jobs:
             --verbose
           fail: true
           output: lychee-report.md
+
+      # Debug .lycheecache directory after Lychee run
+      - name: Debug .lycheecache directory (AFTER)
+        if: always()
+        run: |
+          echo "=== .lycheecache status AFTER Lychee execution ==="
+          if [ -d "docs/.lycheecache" ]; then
+            echo "📁 docs/.lycheecache exists"
+            echo "Total files: $(find docs/.lycheecache -type f | wc -l)"
+            echo "Size: $(du -sh docs/.lycheecache)"
+            echo
+            echo "=== Detailed contents ==="
+            ls -la docs/.lycheecache/
+            echo
+            echo "=== File details ==="
+            find docs/.lycheecache -type f -exec ls -la {} \; 2>/dev/null
+            echo
+            echo "=== Cache file contents (first 10 lines if text) ==="
+            for file in docs/.lycheecache/*; do
+              if [ -f "$file" ]; then
+                echo "--- $file ---"
+                head -10 "$file" 2>/dev/null || echo "(binary or unreadable)"
+                echo
+              fi
+            done
+          else
+            echo "❌ docs/.lycheecache still does not exist after Lychee run"
+          fi
 
       # =========================================================================
       # CACHE SAVE STEP - Different Behavior Based on Scenario
