@@ -53,8 +53,8 @@ jobs:
       - name: Ensure cache dir exists
         run: mkdir -p .lychee-cache
 
-      # Debug: show cache restore outputs, computed key and files used
-      - name: Debug: Cache restore info
+      # Debug show cache restore outputs, computed key and files used
+      - name: Debug Cache restore info
         run: |
           echo "=== Cache restore metadata ==="
           echo "cache-hit=${{ steps.restore-cache.outputs.cache-hit }}"
@@ -68,8 +68,8 @@ jobs:
           git ls-files docs/Content docs/PlusContent docs/README.md || true
           echo "=== End cache metadata ==="
 
-      # Debug: list workspace and repository files (recursive)
-      - name: Debug: List workspace (recursive)
+      # Debug list workspace and repository files (recursive)
+      - name: Debug List workspace (recursive)
         run: |
           echo "Workspace root: $GITHUB_WORKSPACE"
           pwd
@@ -79,8 +79,8 @@ jobs:
           echo "Recursive listing (this may be large):"
           ls -laR "$GITHUB_WORKSPACE" || true
 
-      # Debug: show .lychee-cache contents (if any)
-      - name: Debug: Show .lychee-cache contents
+      # Debug show .lychee-cache contents (if any)
+      - name: Debug Show .lychee-cache contents
         run: |
           echo ".lychee-cache path: $PWD/.lychee-cache"
           if [ -d .lychee-cache ]; then
@@ -158,8 +158,8 @@ jobs:
           path: .lychee-cache
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
-      # Debug: show cache directory after save (size & listing)
-      - name: Debug: Cache after save
+      # Debug show cache directory after save (size & listing)
+      - name: Debug Cache after save
         if: always()
         run: |
           echo "=== After cache save ==="
