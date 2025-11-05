@@ -107,7 +107,13 @@ jobs:
             --verbose
           fail: true
           output: lychee-report.md
-          
+
+      - name: List cache 1
+        run: ls -la .
+        
+      - name: List cache 2
+        run: ls -la ./docs
+        
       - name: Check cache 1
         run: cat .lycheecache
         
