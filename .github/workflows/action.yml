@@ -104,7 +104,7 @@ jobs:
             --exclude './uk/**'
             --exclude './vi/**'
             --exclude './zh-CN/**'
-            --exclude './zh-TW/**'
+#            --exclude './zh-TW/**'
           fail: true
           output: lychee-report.md
 
