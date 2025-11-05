@@ -105,7 +105,6 @@ jobs:
             --exclude './vi/**'
             --exclude './zh-CN/**'
             --exclude './zh-TW/**'
-            --verbose
           fail: true
           output: lychee-report.md
 
