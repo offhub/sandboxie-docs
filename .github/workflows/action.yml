@@ -56,6 +56,49 @@ jobs:
       - name: Ensure cache dir exists
         run: mkdir -p .lychee-cache
 
+      # Debug: show cache restore outputs, computed key and files used
+      - name: Debug: Cache restore info
+        run: |
+          echo "=== Cache restore metadata ==="
+          echo "cache-hit=${{ steps.restore-cache.outputs.cache-hit }}"
+          echo "cache-primary-key=${{ steps.restore-cache.outputs.cache-primary-key }}"
+          # show the primary key expression expanded at workflow-eval time
+          echo "computed-primary-key=lychee-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('docs/Content/*.md', 'docs/PlusContent/*.md', 'docs/README.md') }}"
+          echo "restore-keys used (literal):"
+          echo "lychee-${{ runner.os }}-${{ github.ref }}-"
+          echo
+          echo "Files used to compute the hash (git ls-files may help):"
+          git ls-files docs/Content docs/PlusContent docs/README.md || true
+          echo "=== End cache metadata ==="
+
+      # Debug: list workspace and repository files (recursive)
+      - name: Debug: List workspace (recursive)
+        run: |
+          echo "Workspace root: $GITHUB_WORKSPACE"
+          pwd
+          echo "Top-level listing:"
+          ls -la "$GITHUB_WORKSPACE" || true
+          echo
+          echo "Recursive listing (this may be large):"
+          ls -laR "$GITHUB_WORKSPACE" || true
+
+      # Debug: show .lychee-cache contents (if any)
+      - name: Debug: Show .lychee-cache contents
+        run: |
+          echo ".lychee-cache path: $PWD/.lychee-cache"
+          if [ -d .lychee-cache ]; then
+            echo ".lychee-cache exists: listing top-level entries"
+            ls -la .lychee-cache || true
+            echo
+            echo "Recursive contents (up to depth 5):"
+            find .lychee-cache -maxdepth 5 -print -exec ls -la {} \; || true
+            echo
+            echo "Sizes of files inside .lychee-cache (human readable):"
+            find .lychee-cache -type f -exec du -h {} + | sort -hr | head -n 200 || true
+          else
+            echo ".lychee-cache does not exist"
+          fi
+
       # =========================================================================
       # CACHE HIT SCENARIO - Fast Path
       # =========================================================================
@@ -118,6 +161,25 @@ jobs:
           path: .lychee-cache
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 
+      # Debug: show cache directory after save (size & listing)
+      - name: Debug: Cache after save
+        if: always()
+        run: |
+          echo "=== After cache save ==="
+          if [ -d .lychee-cache ]; then
+            echo "Total size of .lychee-cache:"
+            du -sh .lychee-cache || true
+            echo
+            echo "Top-level entries:"
+            ls -la .lychee-cache || true
+            echo
+            echo "Recursive listing (up to depth 5):"
+            find .lychee-cache -maxdepth 5 -print -exec ls -la {} \; || true
+          else
+            echo ".lychee-cache not present after save"
+          fi
+          echo "=== End after cache save ==="
+
       - name: Log cache save result
         if: always()
         run: |
@@ -127,34 +189,34 @@ jobs:
             echo "🆕 New cache created with all link check results"
           fi
 
-      # Upload report as artifact if broken links are found
-      - name: Upload Lychee report
-        if: failure()
-        uses: actions/upload-artifact@v5.0.0
-        with:
-          name: lychee-report
-          path: lychee-report.md
-          retention-days: 30
+      # # Upload report as artifact if broken links are found
+      # - name: Upload Lychee report
+        # if: failure()
+        # uses: actions/upload-artifact@v5.0.0
+        # with:
+          # name: lychee-report
+          # path: lychee-report.md
+          # retention-days: 30
 
-      # To avoid automated spam, try to find an existing open issue before opening a new one
-      # Source: https://github.com/cilium/tetragon/pull/805
-      - name: Search for existing issue number
-        if: failure() && github.ref == 'refs/heads/main'
-        id: search_issue
-        env:
-          ISSUE_NAME: "Link Checker Report"
-        run: |
-          encoded_issue_name=$(echo "$ISSUE_NAME" | sed 's/ /%20/g')
-          response=$(curl -s -X GET \
-            "https://api.github.com/search/issues?q=$encoded_issue_name+repo:${{ github.repository }}+state:open+label:automated-report&type=Issues")
-          issue_number=$(echo "$response" | jq -r '.items[0].number // empty')
-          echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
+      # # To avoid automated spam, try to find an existing open issue before opening a new one
+      # # Source: https://github.com/cilium/tetragon/pull/805
+      # - name: Search for existing issue number
+        # if: failure() && github.ref == 'refs/heads/main'
+        # id: search_issue
+        # env:
+          # ISSUE_NAME: "Link Checker Report"
+        # run: |
+          # encoded_issue_name=$(echo "$ISSUE_NAME" | sed 's/ /%20/g')
+          # response=$(curl -s -X GET \
+            # "https://api.github.com/search/issues?q=$encoded_issue_name+repo:${{ github.repository }}+state:open+label:automated-report&type=Issues")
+          # issue_number=$(echo "$response" | jq -r '.items[0].number // empty')
+          # echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
 
-      - name: Create issue from file
-        if: failure() && github.ref == 'refs/heads/main'
-        uses: peter-evans/create-issue-from-file@v6.0.0
-        with:
-          title: Link Checker Report
-          content-filepath: lychee-report.md
-          issue-number: ${{ steps.search_issue.outputs.issue_number }}
-          labels: automated-report
+      # - name: Create issue from file
+        # if: failure() && github.ref == 'refs/heads/main'
+        # uses: peter-evans/create-issue-from-file@v6.0.0
+        # with:
+          # title: Link Checker Report
+          # content-filepath: lychee-report.md
+          # issue-number: ${{ steps.search_issue.outputs.issue_number }}
+          # labels: automated-report
