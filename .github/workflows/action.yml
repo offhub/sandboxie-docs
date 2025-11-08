@@ -2,7 +2,7 @@ name: Check broken links
 
 on:
   schedule:
-    - cron: '30 14 * * *'  # Run daily at 08:00 UTC
+    - cron: '0 8 * * *'  # Run daily at 08:00 UTC
   # Triggers the workflow on push or pull request events
   push:
     branches: [ main ]
@@ -158,6 +158,16 @@ jobs:
         with:
           path: .lycheecache
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: Log cache save result
+        if: always()
+        run: |
+          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "⏭️  Cache save skipped (using existing cache)"
+          else
+            echo "💾 New cache created with current link check results"
+            echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
+          fi
 
       - name: Log cache save result
         if: always()
