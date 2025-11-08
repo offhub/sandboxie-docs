@@ -16,9 +16,9 @@ on:
   workflow_dispatch:
     inputs:
       cache_max_age_days:
-        description: 'Cache max age in days (default: 7)'
+        description: 'Cache max age in days (default: 30)'
         required: false
-        default: '7'
+        default: '30'
         type: choice
         options:
           - 1
@@ -47,12 +47,14 @@ jobs:
       - name: Set cache duration
         id: cache_duration
         run: |
-          # For workflow_dispatch, use the input value or default to 7
+          # For workflow_dispatch (manual runs), use the input value or default to 30
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            CACHE_DAYS="${{ github.event.inputs.cache_max_age_days || 7 }}"
+            CACHE_DAYS="${{ github.event.inputs.cache_max_age_days || 30 }}"
+            echo "Manual run: Using cache duration from input: $CACHE_DAYS days"
           else
-            # For schedule, push, pull_request triggers, use default 7
+            # For schedule, push, pull_request triggers (automated runs), use default 7
             CACHE_DAYS="7"
+            echo "Automated run: Using default cache duration: $CACHE_DAYS days"
           fi
           echo "CACHE_DAYS=$CACHE_DAYS" >> $GITHUB_ENV
           echo "Using cache duration: $CACHE_DAYS days"
