@@ -80,8 +80,20 @@ jobs:
             lychee-${{ runner.os }}-${{ github.ref }}-
 
       - name: List cache entries
-        if: steps.restore-cache.outputs.cache-hit == 'true'
-        run: cat .lycheecache
+        if: always()
+        run: |
+          echo "=== Cache Status ==="
+          echo "Cache Hit: ${{ steps.restore-cache.outputs.cache-hit }}"
+          echo "Primary Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
+          echo "Matched Key: ${{ steps.restore-cache.outputs.cache-matched-key }}"
+          
+          echo "=== Cache Contents ==="
+          if [ -f .lycheecache ]; then
+            echo "Cache file exists with contents:"
+            cat .lycheecache
+          else
+            echo "No cache file present"
+          fi
 
       # =========================================================================
       # CACHE HIT SCENARIO - Fast Path
