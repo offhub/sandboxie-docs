@@ -169,16 +169,6 @@ jobs:
             echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
           fi
 
-      - name: Log cache save result
-        if: always()
-        run: |
-          if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
-            echo "⏭️  Cache save skipped (using existing cache)"
-          else
-            echo "💾 New cache created with current link check results"
-            echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
-          fi
-
       # Upload report as artifact if broken links are found
       - name: Upload Lychee report
         if: failure()
