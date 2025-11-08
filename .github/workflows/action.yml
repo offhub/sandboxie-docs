@@ -109,7 +109,7 @@ jobs:
             --max-redirects 100
             --accept 200,403,429,500
             --cache
-            --max-cache-age $CACHE_DAYSd
+            --max-cache-age "$CACHE_DAYS"d
             './**/*.md'
             --exclude './ar/**'
             --exclude './de/**'
