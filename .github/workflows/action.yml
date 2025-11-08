@@ -14,6 +14,18 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      cache_max_age_days:
+        description: 'Cache max age in days (default: 7)'
+        required: false
+        default: '7'
+        type: choice
+        options:
+          - 1
+          - 3
+          - 7
+          - 14
+          - 30
 
 jobs:
   LinkChecker:
@@ -30,6 +42,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5.0.0
+
+      # Set cache days based on trigger type
+      - name: Set cache duration
+        id: cache_duration
+        run: |
+          # For workflow_dispatch, use the input value or default to 7
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CACHE_DAYS="${{ github.event.inputs.cache_max_age_days || 7 }}"
+          else
+            # For schedule, push, pull_request triggers, use default 7
+            CACHE_DAYS="7"
+          fi
+          echo "CACHE_DAYS=$CACHE_DAYS" >> $GITHUB_ENV
+          echo "Using cache duration: $CACHE_DAYS days"
 
       # Get latest curl version for user-agent header
       - name: Get latest curl version from GitHub API
@@ -68,6 +94,7 @@ jobs:
           else
             echo "🔄 CACHE MISS: Will check all links and create new cache"
           fi
+          echo "Cache Max Age: $CACHE_DAYS days"
 
       # Run Lychee link checker
       - name: Lychee Broken Link Checker
@@ -82,7 +109,7 @@ jobs:
             --max-redirects 100
             --accept 200,403,429,500
             --cache
-            --max-cache-age 1d
+            --max-cache-age $CACHE_DAYSd
             './**/*.md'
             --exclude './ar/**'
             --exclude './de/**'
@@ -104,7 +131,8 @@ jobs:
             --exclude './uk/**'
             --exclude './vi/**'
             --exclude './zh-CN/**'
-#            --exclude './zh-TW/**'
+            --exclude './zh-TW/**'
+#            --verbose
           fail: true
           output: lychee-report.md
 
@@ -112,7 +140,7 @@ jobs:
       # CACHE SAVE STEP - Different Behavior Based on Scenario
       # =========================================================================
       - name: Save lychee cache
-        if: always()
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4.3.0
         with:
           path: .lycheecache
@@ -122,39 +150,39 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.restore-cache.outputs.cache-hit }}" = "true" ]; then
-            echo "✅ Cache was updated with fresh link data"
+            echo "⏭️  Cache save skipped (using existing cache)"
           else
-            echo "🆕 New cache created with all link check results"
+            echo "💾 New cache created with current link check results"
+            echo "Cache Key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
           fi
 
-      # # Upload report as artifact if broken links are found
-      # - name: Upload Lychee report
-        # if: failure()
-        # uses: actions/upload-artifact@v5.0.0
-        # with:
-          # name: lychee-report
-          # path: lychee-report.md
-          # retention-days: 30
+      # Upload report as artifact if broken links are found
+      - name: Upload Lychee report
+        if: failure()
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: lychee-report
+          path: lychee-report.md
 
-      # # To avoid automated spam, try to find an existing open issue before opening a new one
-      # # Source: https://github.com/cilium/tetragon/pull/805
-      # - name: Search for existing issue number
-        # if: failure() && github.ref == 'refs/heads/main'
-        # id: search-issue
-        # env:
-          # ISSUE_NAME: "Link Checker Report"
-        # run: |
-          # encoded_issue_name=$(echo "$ISSUE_NAME" | sed 's/ /%20/g')
-          # response=$(curl -s -X GET \
-            # "https://api.github.com/search/issues?q=$encoded_issue_name+repo:${{ github.repository }}+state:open+label:automated-report&type=Issues")
-          # issue_number=$(echo "$response" | jq -r '.items[0].number // empty')
-          # echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
+      # To avoid automated spam, try to find an existing open issue before opening a new one
+      # Source: https://github.com/cilium/tetragon/pull/805
+      - name: Search for existing issue number
+        if: failure() && github.ref == 'refs/heads/main'
+        id: search_issue
+        env:
+          ISSUE_NAME: "Link Checker Report"
+        run: |
+          encoded_issue_name=$(echo "$ISSUE_NAME" | sed 's/ /%20/g')
+          response=$(curl -s -X GET \
+            "https://api.github.com/search/issues?q=$encoded_issue_name+repo:${{ github.repository }}+state:open+label:automated-report&type=Issues")
+          issue_number=$(echo "$response" | jq -r '.items[0].number // empty')
+          echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
 
-      # - name: Create issue from file
-        # if: failure() && github.ref == 'refs/heads/main'
-        # uses: peter-evans/create-issue-from-file@v6.0.0
-        # with:
-          # title: Link Checker Report
-          # content-filepath: lychee-report.md
-          # issue-number: ${{ steps.search-issue.outputs.issue_number }}
-          # labels: automated-report
+      - name: Create issue from file
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: peter-evans/create-issue-from-file@v6.0.0
+        with:
+          title: Link Checker Report
+          content-filepath: lychee-report.md
+          issue-number: ${{ steps.search_issue.outputs.issue_number }}
+          labels: automated-report
